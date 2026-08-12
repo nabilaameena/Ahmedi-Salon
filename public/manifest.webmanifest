@@ -1,0 +1,14 @@
+{
+  "name": "अहमेदी सैलून",
+  "short_name": "अहमेदी सैलून",
+  "description": "An always-on radio playing old-school 90s Bollywood favourites over an illustrated Indian street corner.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#2b1a12",
+  "theme_color": "#2b1a12",
+  "icons": [
+    { "src": "favicon.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

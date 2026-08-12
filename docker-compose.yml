@@ -1,0 +1,16 @@
+services:
+  saloon:
+    build: .
+    container_name: ahmedi-salon
+    ports:
+      - "8080:8080"
+    environment:
+      # Change this token to control who can skip / switch rotations.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-saloon}
+      PORT: "8080"
+    volumes:
+      - saloon-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  saloon-data:

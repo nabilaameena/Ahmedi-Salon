@@ -1,0 +1,19 @@
+# build output
+dist/
+node_modules/
+
+# runtime state (station store: durations, chat, listens, peak)
+data/
+
+# env / secrets
+.env
+.env.*
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / os
+.DS_Store
+.vscode/
+.idea/
