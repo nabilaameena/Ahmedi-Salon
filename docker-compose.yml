@@ -2,14 +2,25 @@ services:
   saloon:
     build: .
     container_name: ahmedi-salon
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       # Change this token to control who can skip / switch rotations.
       ADMIN_TOKEN: ${ADMIN_TOKEN:-saloon}
       PORT: "8080"
     volumes:
       - saloon-data:/app/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ahmedi-salon-nginx
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - saloon
     restart: unless-stopped
 
 volumes:

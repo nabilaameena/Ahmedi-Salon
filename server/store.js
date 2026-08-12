@@ -10,6 +10,7 @@ const DEFAULTS = {
   listens: {},     // videoId -> lifetime play count
   chat: [],        // last N wall messages
   peak: 0,         // peak concurrent listeners
+  totalUsers: 0,   // cumulative count of all listeners ever connected
 };
 
 export class Store {
@@ -48,5 +49,10 @@ export class Store {
 
   setPeak(n) {
     if (n > (this.data.peak || 0)) { this.data.peak = n; this.markDirty(); }
+  }
+
+  incrementUsers() {
+    this.data.totalUsers = (this.data.totalUsers || 0) + 1;
+    this.markDirty();
   }
 }

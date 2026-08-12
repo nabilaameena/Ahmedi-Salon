@@ -452,7 +452,9 @@ function renderNowStrip() {
     el('div', { class: 'stat-row' },
       el('span', {}, 'peak today'), el('span', { class: 'stat-val' }, String(station.peak || 0))),
     el('div', { class: 'stat-row' },
-      el('span', {}, 'all-time plays'), el('span', { class: 'stat-val' }, String(station.totalListens || 0)))
+      el('span', {}, 'songs aired'), el('span', { class: 'stat-val' }, String(station.totalListens || 0))),
+    el('div', { class: 'stat-row' },
+      el('span', {}, 'all-time users'), el('span', { class: 'stat-val' }, String(station.totalUsers || 0)))
   ));
   return box;
 }

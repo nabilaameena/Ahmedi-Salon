@@ -82,6 +82,7 @@ function send(ws, msg) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(m
 wss.on('connection', (ws) => {
   clients.add(ws);
   store.setPeak(clients.size);
+  store.incrementUsers();
   broadcast({ type: 'presence', count: clients.size });
   broadcast({ type: 'stats', listeners: clients.size, ...station.stats() });
 

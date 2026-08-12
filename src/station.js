@@ -15,6 +15,7 @@ export const station = {
   listeners: 0,
   peak: 0,
   totalListens: 0,
+  totalUsers: 0,
   requests: [],
   schedule: [],
   chat: [],
@@ -69,6 +70,7 @@ function handle(msg) {
       station.listeners = msg.listeners ?? station.listeners;
       station.peak = msg.peak ?? station.peak;
       station.totalListens = msg.totalListens ?? station.totalListens;
+      station.totalUsers = msg.totalUsers ?? station.totalUsers;
       if (cb.onStats) cb.onStats();
       break;
     case 'requests':

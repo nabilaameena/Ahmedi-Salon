@@ -149,6 +149,6 @@ export class Station {
 
   stats() {
     const totalListens = Object.values(this.listens).reduce((a, b) => a + b, 0);
-    return { peak: this.store.data.peak || 0, totalListens };
+    return { peak: this.store.data.peak || 0, totalListens, totalUsers: this.store.data.totalUsers || 0 };
   }
 }
