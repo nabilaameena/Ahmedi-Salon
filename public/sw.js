@@ -2,7 +2,7 @@
 // updates are picked up; stale-while-revalidate for hashed static assets.
 // YouTube playback and the WebSocket are always hit fresh.
 
-const CACHE = 'saloon-v7';
+const CACHE = 'saloon-v8';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -33,12 +33,23 @@ self.addEventListener('fetch', (e) => {
 
   e.respondWith(
     caches.match(req).then((cached) => {
-      const net = fetch(req).then((res) => {
+      // Hashed build assets (under /assets/) are safe cache-first — their
+      // filename changes when content changes. Root static files (favicon,
+      // manifest, robots, sitemap, share image, etc.) are network-first so a
+      // swapped file is always picked up immediately.
+      const isHashedAsset = url.pathname.startsWith('/assets/');
+      if (isHashedAsset) {
+        return cached || fetch(req).then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        }).catch(() => cached);
+      }
+      return fetch(req).then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(req, copy));
         return res;
       }).catch(() => cached);
-      return cached || net;
     })
   );
 });
