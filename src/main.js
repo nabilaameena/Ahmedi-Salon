@@ -7,6 +7,7 @@ import * as player from './player.js';
 import { station, connectStation, reportEnded, reportDuration, tuneIn } from './station.js';
 import { onAuthChange } from './admin.js';
 import { enableNotifications, notifyNowPlaying } from './notify.js';
+import { setupMediaSession, setNowPlaying, setPlaybackState, updateWakeLock, bindWakeLockRelay } from './media.js';
 import {
   renderShell, renderView, renderTabs, renderPresence, renderPlayer,
   bindPlayerEvents, currentRoute, navigate, appendChat,
@@ -37,6 +38,8 @@ player.initPlayer({
       const b = document.getElementById(id);
       if (b) b.innerHTML = html;
     }
+    setPlaybackState(playing);
+    updateWakeLock(playing);
   },
 });
 
@@ -45,6 +48,7 @@ connectStation({
   onStation: (s) => {
     player.syncTo(s.videoId, s.startedAt);
     refresh();
+    setNowPlaying(s.song);
     if (station.tunedIn) notifyNowPlaying(s.song);
   },
   onUpNext: () => { if (currentRoute() !== 'wall') renderView(); },
@@ -81,6 +85,10 @@ renderView();
 renderPresence();
 bindPlayerEvents();
 updateAdminControls();
+
+// OS media controls (lock screen / notification / hardware keys) + screen wake lock
+setupMediaSession({ play: () => player.play(), pause: () => player.pause() });
+bindWakeLockRelay(() => player.isPlaying());
 
 // Re-render admin-gated controls when the token is set or cleared.
 onAuthChange(() => {

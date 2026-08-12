@@ -873,6 +873,37 @@ body {
 .admin-ok:hover { background: rgba(74,222,128,0.16); }
 .admin-cancel:hover { background: var(--glass-strong); }
 
+/* ---------- Share card preview ---------- */
+.share-preview {
+  position: fixed; inset: 0; z-index: 65;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem; text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), rgba(10,6,4,0.72);
+  backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6);
+}
+.share-card {
+  position: relative; max-width: min(32rem, 92vw); width: 100%;
+  background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1rem;
+  padding: 1rem 1rem 1.2rem; box-shadow: var(--shadow);
+}
+.share-card-img { width: 100%; border-radius: 0.6rem; display: block; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.share-actions { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.9rem; }
+.share-save, .share-copy {
+  padding: 0.6rem 1.1rem; border-radius: 999px; border: 1px solid var(--glass-border);
+  background: var(--glass); color: var(--cream); font: inherit; font-weight: 600; font-size: 0.82rem;
+  cursor: pointer; text-decoration: none; display: inline-block;
+  backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+.share-save { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.share-save:hover, .share-copy:hover { background: var(--glass-strong); }
+.share-close {
+  position: absolute; top: 0.5rem; right: 0.5rem;
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 50%; border: 0; background: var(--glass); color: var(--cream); cursor: pointer;
+}
+.share-close svg { width: 18px; height: 18px; }
+.share-close:hover { background: var(--glass-strong); }
+
 @media (max-width: 560px) {
   .reaction-dock { right: 0.6rem; }
   .react-btn { width: 32px; height: 32px; font-size: 1rem; }

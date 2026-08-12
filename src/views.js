@@ -4,7 +4,7 @@ import { songs, rotations, songsBySlug } from './data.js';
 import { station, requestSong, postChat, sendReaction } from './station.js';
 import { doSkip, doSwitch, hasAdminToken, checkToken, clearToken, onAuthChange } from './admin.js';
 import { toggle, setVolume, seekToPercent } from './player.js';
-import { shareNowPlaying } from './share.js';
+import { captionText, makeCardBlob, BRAND_HI } from './share.js';
 import { toast } from './toast.js';
 
 // ---- Links -----------------------------------------------------------
@@ -249,9 +249,42 @@ export function renderNowPlaying() {
 }
 
 async function onShare() {
-  const r = await shareNowPlaying();
-  if (r === 'copied') toast('Copied — paste it anywhere.', 'success');
-  else if (r === 'failed') toast('Sharing isn’t available on this browser.', 'error');
+  const song = station.song;
+  const caption = captionText(song);
+  let blob;
+  try { blob = await makeCardBlob(song); } catch { toast('Couldn’t build the share card.', 'error'); return; }
+  if (!blob) { toast('Couldn’t build the share card.', 'error'); return; }
+  const file = new File([blob], 'ahmedi-salon.png', { type: 'image/png' });
+  // Mobile / supporting browsers: native share with the image.
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: BRAND_HI, text: caption }); return; }
+    catch (e) { if (e?.name === 'AbortError') return; /* fall through to preview */ }
+  }
+  // Desktop / unsupported: show the card on screen with Save + Copy caption.
+  showSharePreview(blob, caption);
+}
+
+// In-app share card preview (used when native file sharing isn’t available).
+function showSharePreview(blob, caption) {
+  const url = URL.createObjectURL(blob);
+  let modal = document.getElementById('sharePreview');
+  if (modal) modal.remove();
+  modal = el('div', { id: 'sharePreview', class: 'share-preview' },
+    el('div', { class: 'share-card' },
+      el('img', { class: 'share-card-img', alt: 'Ahmedi Salon now playing', src: url }),
+      el('div', { class: 'share-actions' },
+        el('a', { class: 'share-save', href: url, download: 'ahmedi-salon.png' }, 'Save image'),
+        el('button', { class: 'share-copy', onclick: async () => {
+          try { await navigator.clipboard.writeText(caption); toast('Caption copied.', 'success'); }
+          catch { toast('Copy failed — select the caption manually.', 'error'); }
+        } }, 'Copy caption'),
+      ),
+      el('button', { class: 'share-close', 'aria-label': 'Close', html: I.close, onclick: () => {
+        modal.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } })
+    )
+  );
+  document.body.appendChild(modal);
 }
 
 export function openNowPlaying() {
