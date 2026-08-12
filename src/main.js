@@ -1,6 +1,6 @@
 import './styles.css';
-import backdropDesktop from './assets/backdrop.png';
-import backdropMobile from './assets/backdrop-mobile.png';
+import backdropDesktop from './assets/backdrop.jpg';
+import backdropMobile from './assets/backdrop-mobile.jpg';
 
 import { songs } from './data.js';
 import * as player from './player.js';

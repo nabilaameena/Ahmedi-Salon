@@ -3,7 +3,7 @@
 // on screen with Save + Copy-caption so it always "comes up".
 
 import { station } from './station.js';
-import backdropDesktop from './assets/backdrop.png';
+import backdropDesktop from './assets/backdrop.jpg';
 
 export const BRAND_HI = 'अहमेदी सैलून';
 export const SITE = 'https://ahmedisalon.nabilahmed.in';
