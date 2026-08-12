@@ -78,12 +78,17 @@ function startProgress() {
     const cur = player.getCurrentTime();
     const dur = player.getDuration();
     if (dur > 0) {
-      const seek = document.getElementById('seek');
-      const curEl = document.getElementById('cur');
-      const durEl = document.getElementById('dur');
-      if (seek) seek.value = (cur / dur) * 100;
-      if (curEl) curEl.textContent = fmt(cur);
-      if (durEl) durEl.textContent = fmt(dur);
+      const pct = (cur / dur) * 100;
+      const curTxt = fmt(cur), durTxt = fmt(dur);
+      for (const [seek, c, d] of [
+        ['seek', 'cur', 'dur'],
+        ['npSeek', 'npCur', 'npDur'],
+      ]) {
+        const s = document.getElementById(seek);
+        if (s) s.value = pct;
+        const ce = document.getElementById(c); if (ce) ce.textContent = curTxt;
+        const de = document.getElementById(d); if (de) de.textContent = durTxt;
+      }
     }
   }, 500);
 }

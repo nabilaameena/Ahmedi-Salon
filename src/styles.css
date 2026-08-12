@@ -462,7 +462,7 @@ body {
   text-overflow: ellipsis;
 }
 .player .controls { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
-.player .ctrl {
+.ctrl {
   width: 38px; height: 38px;
   display: grid; place-items: center;
   border-radius: 50%;
@@ -472,16 +472,16 @@ body {
   cursor: pointer;
   transition: background 0.12s, transform 0.1s;
 }
-.player .ctrl:hover { background: var(--glass); }
-.player .ctrl:active { transform: scale(0.92); }
-.player .ctrl.main {
+.ctrl:hover { background: var(--glass); }
+.ctrl:active { transform: scale(0.92); }
+.ctrl.main {
   background: var(--cream);
   color: var(--ink);
   width: 44px; height: 44px;
 }
-.player .ctrl.main:hover { background: #fff; }
-.player .ctrl svg { width: 18px; height: 18px; fill: currentColor; }
-.player .ctrl.main svg { width: 20px; height: 20px; }
+.ctrl.main:hover { background: #fff; }
+.ctrl svg { width: 18px; height: 18px; fill: currentColor; }
+.ctrl.main svg { width: 20px; height: 20px; }
 
 .player .seek-wrap { flex: 1.4; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
 .seek {
@@ -715,3 +715,127 @@ body {
 /* ---------- Utility ---------- */
 .hide-sm { display: inline; }
 @media (max-width: 560px) { .hide-sm { display: none; } }
+
+/* ---------- Day/night reactive backdrop ---------- */
+.backdrop { transition: filter 1.5s ease; }
+.backdrop::after { transition: background 1.5s ease; }
+.backdrop[data-rot="highway-raat"] { filter: brightness(0.62) saturate(0.85) hue-rotate(-8deg); }
+.backdrop[data-rot="shaadi-sunday"] { filter: brightness(1.06) saturate(1.12); }
+.backdrop[data-rot="saloon-classics"] { filter: brightness(0.96) saturate(1.02); }
+.backdrop[data-rot="dard-90s"] { filter: brightness(0.84) saturate(1.18) sepia(0.12) hue-rotate(-6deg); }
+.backdrop[data-rot="highway-raat"]::after { background: linear-gradient(to bottom, rgba(8,16,40,0.45), rgba(6,4,18,0.55) 55%, rgba(0,0,0,0.8)); }
+.backdrop[data-rot="shaadi-sunday"]::after { background: linear-gradient(to bottom, rgba(255,200,120,0.20), rgba(255,150,80,0.08) 50%, rgba(0,0,0,0.7)); }
+.backdrop[data-rot="saloon-classics"]::after { background: linear-gradient(to bottom, rgba(255,240,210,0.06), rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.75)); }
+.backdrop[data-rot="dard-90s"]::after { background: linear-gradient(to bottom, rgba(255,120,80,0.22), rgba(150,40,60,0.20) 50%, rgba(0,0,0,0.78)); }
+
+/* ---------- Live reactions ---------- */
+.reaction-layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+.float-emoji {
+  position: absolute; bottom: 6rem;
+  user-select: none; line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  animation: floatUp 2.9s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes floatUp {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  18%  { opacity: 1; transform: translate(calc(var(--drift,0px) * 0.18), -12vh) scale(1.15); }
+  100% { transform: translate(var(--drift, 0px), -80vh) scale(0.85); opacity: 0; }
+}
+
+.reaction-dock {
+  position: fixed;
+  right: 1rem; bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  z-index: 35;
+  display: flex; gap: 0.25rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: var(--shadow);
+}
+.react-btn {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: transparent;
+  font-size: 1.15rem; cursor: pointer; line-height: 1;
+  transition: transform 0.1s, background 0.12s;
+}
+.react-btn:hover { background: var(--glass-strong); }
+.react-btn:active { transform: scale(0.82); }
+.react-btn.lg { width: 50px; height: 50px; font-size: 1.55rem; }
+
+/* ---------- Now Playing overlay ---------- */
+.np {
+  position: fixed; inset: 0; z-index: 55;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.1rem; padding: 4.5rem 1.5rem 7rem; text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+    rgba(10,6,4,0.7);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  opacity: 0; visibility: hidden; transform: translateY(24px);
+  transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s;
+  overflow-y: auto;
+}
+.np.open { opacity: 1; visibility: visible; transform: translateY(0); }
+.np-close {
+  position: absolute; top: 1rem; right: 1rem;
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border-radius: 50%; border: 0; background: var(--glass); color: var(--cream); cursor: pointer;
+}
+.np-close:hover { background: var(--glass-strong); }
+.np-close svg { width: 20px; height: 20px; }
+.np-art {
+  width: clamp(220px, 56vw, 320px); aspect-ratio: 1;
+  border-radius: 1rem; overflow: hidden;
+  box-shadow: var(--shadow); background: var(--ink-2);
+}
+.np-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.np-meta { max-width: 40rem; }
+.np-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0 0 0.5rem; }
+.np-title { font-family: var(--font-display); font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--cream); margin: 0; line-height: 1.1; }
+.np-sub { font-size: 0.95rem; color: var(--sand); margin: 0.5rem 0 0; }
+.np-artist { font-size: 0.82rem; color: var(--sand-dim); margin: 0.2rem 0 0; }
+.np-seek { width: min(30rem, 80vw); display: flex; flex-direction: column; gap: 0.3rem; }
+.np-seek input { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 999px; background: rgba(245,234,210,0.2); outline: none; cursor: pointer; }
+.np-seek input::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); cursor: pointer; }
+.np-seek input::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); border: 0; cursor: pointer; }
+.np-seek .time { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.66rem; color: var(--sand-dim); }
+.np-controls { display: flex; align-items: center; gap: 1rem; }
+.np-controls .ctrl { width: 44px; height: 44px; }
+.np-controls .ctrl.main { width: 60px; height: 60px; }
+.np-controls .ctrl svg { width: 22px; height: 22px; }
+.np-controls .ctrl.main svg { width: 26px; height: 26px; }
+.np-reactions { display: flex; gap: 0.5rem; margin-top: 0.3rem; }
+.np-share {
+  padding: 0.6rem 1.4rem; border-radius: 999px;
+  border: 1px solid var(--glass-border); background: var(--glass);
+  color: var(--cream); font: inherit; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+  backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+.np-share:hover { background: var(--glass-strong); }
+.np-upnext { font-size: 0.78rem; color: var(--sand-dim); }
+.np-upnext span { color: var(--sand); }
+
+@media (max-width: 560px) {
+  .reaction-dock { right: 0.6rem; }
+  .react-btn { width: 32px; height: 32px; font-size: 1rem; }
+}
+
+/* ---------- Drawer head actions + credit ---------- */
+.drawer-head-actions { display: flex; align-items: center; gap: 0.4rem; }
+.built-by {
+  color: var(--sand-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: color 0.15s, opacity 0.15s;
+}
+.hero .built-by { margin-top: 1.4rem; display: inline-block; }
+.foot .built-by { color: var(--gold); }
+.built-by:hover { color: var(--gold); opacity: 1; }

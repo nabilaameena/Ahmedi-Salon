@@ -1,0 +1,24 @@
+# अहमेदी सैलून · Ahmedi Salon
+
+> An always-on, synchronised street-corner radio playing 90s Bollywood film songs, inspired by Deluxe Salon.
+
+Ahmedi Salon is a full-stack, self-hostable radio station. Everyone tuned in at
+the same moment hears the same track at the same position, like a real station —
+a server-driven station clock seek-syncs every listener. Audio is streamed
+through YouTube's embedded player; nothing is hosted here, and all rights to
+the music, films and recordings remain with their owners.
+
+- Live: https://ahmedisalon.nabilahmed.in
+- Source: https://github.com/nabilaameena/Ahmedi-Salon
+- Built by Nabil: https://nabilahmed.in
+- License: MIT
+
+## Sections
+- [On Air](https://ahmedisalon.nabilahmed.in/): the synchronised station; four rotations auto-picked by the hour in India (IST)
+- [Songs](https://ahmedisalon.nabilahmed.in/#/songs): 133 songs (1986–2001) with Hindi + Romanised titles, film, artist, year
+- [Playlists](https://ahmedisalon.nabilahmed.in/#/playlists): four rotations — Highway Raat, Saloon Classics, 90s Dard, Shaadi & Sunday
+- [Listener wall](https://ahmedisalon.nabilahmed.in/#/wall): live chat broadcast to everyone tuned in
+
+## Optional
+- [README — overview, architecture, deploy](https://github.com/nabilaameena/Ahmedi-Salon#readme)
+- [LICENSE (MIT)](https://github.com/nabilaameena/Ahmedi-Salon/blob/main/LICENSE)

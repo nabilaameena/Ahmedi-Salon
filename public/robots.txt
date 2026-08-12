@@ -1,0 +1,11 @@
+# robots.txt — ahmedisalon.nabilahmed.in
+# Ahmedi Salon is a single-page radio app; the indexable page is the root.
+# The API and WebSocket endpoints are dynamic and not meant for crawlers.
+# AI / LLM crawlers are welcome (see /llms.txt).
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /ws
+
+Sitemap: https://ahmedisalon.nabilahmed.in/sitemap.xml

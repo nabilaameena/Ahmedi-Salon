@@ -73,6 +73,9 @@ function handle(msg) {
       station.chat = msg.messages || [];
       if (cb.onChatHistory) cb.onChatHistory();
       break;
+    case 'reaction':
+      if (cb.onReaction) cb.onReaction(msg);
+      break;
     case 'chat':
       station.chat.push(msg);
       if (station.chat.length > 80) station.chat = station.chat.slice(-80);
@@ -87,6 +90,7 @@ export function send(msg) {
 
 export function requestSong(slug) { send({ type: 'request', slug }); }
 export function postChat(text) { send({ type: 'chat', text }); }
+export function sendReaction(emoji) { send({ type: 'reaction', emoji }); }
 export function reportEnded(videoId) { send({ type: 'track:ended', videoId }); }
 export function reportDuration(videoId, duration) { send({ type: 'track:duration', videoId, duration }); }
 

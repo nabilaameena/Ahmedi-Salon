@@ -137,7 +137,7 @@ behind any reverse proxy.
   force-rotation.
 - **Spotify / YouTube Music links** — set `LINKS` at the top of `src/views.js`.
 - **Social share image** — in `index.html`, replace
-  `https://your-domain.example/backdrop.png` with your real domain.
+  `https://your-domain.example/social-share.png` with your real domain.
 - **Scaling** — the server holds station state in memory + a JSON file, which is
   fine for one instance. For multiple replicas, move state to Redis/Postgres and
   run the WebSocket hub behind a sticky-session or pub/sub layer.

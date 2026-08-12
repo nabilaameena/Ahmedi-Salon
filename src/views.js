@@ -1,14 +1,15 @@
 // All view rendering. The app re-renders on every station state change.
 import { el, $, I, relTime } from './lib.js';
 import { songs, rotations, songsBySlug } from './data.js';
-import { station, requestSong, postChat } from './station.js';
+import { station, requestSong, postChat, sendReaction } from './station.js';
 import { doSkip, doSwitch } from './admin.js';
 import { toggle, setVolume, seekToPercent } from './player.js';
+import { shareNowPlaying } from './share.js';
 
-// ---- Links (edit to your own playlists) -----------------------------
+// ---- Links -----------------------------------------------------------
 const LINKS = {
-  spotify: 'https://open.spotify.com/',
-  youtube: 'https://music.youtube.com/',
+  spotify: 'https://open.spotify.com/playlist/5ArVtGnLrImLZ8cQRQaRlZ?si=ab461580ab864318',
+  youtube: 'https://music.youtube.com/playlist?list=PLb9iKZqdgfJg',
 };
 
 // ---- Shell ----------------------------------------------------------
@@ -21,8 +22,7 @@ export function renderShell(handlers) {
   const top = el('div', { class: 'topbar' });
   top.appendChild(el('div', { class: 'left' },
     el('button', { id: 'menuBtn', class: 'pill', title: 'Browse', 'aria-label': 'Browse', html: I.menu, onclick: openDrawer }),
-    el('button', { id: 'installBtn', class: 'pill', title: 'Install app' }, 'Install'),
-    el('button', { id: 'adminBtn', class: 'pill', title: 'Admin', html: I.gear, onclick: handlers.onAdmin })
+    el('button', { id: 'installBtn', class: 'pill', title: 'Install app' }, 'Install')
   ));
   top.appendChild(el('div', { class: 'center' },
     el('span', { class: 'pill online' },
@@ -47,7 +47,8 @@ export function renderShell(handlers) {
       el('span', { class: 'logo-line' }, 'सैलून')),
     el('p', { class: 'sub' }, 'open all hours'),
     el('div', { class: 'divider' }),
-    el('button', { id: 'tuneInBtn', class: 'tune-btn hero-tune', onclick: handlers.onTuneIn }, 'Tune in')
+    el('button', { id: 'tuneInBtn', class: 'tune-btn hero-tune', onclick: handlers.onTuneIn }, 'Tune in'),
+    el('a', { class: 'built-by', href: 'https://nabilahmed.in', target: '_blank', rel: 'noopener noreferrer' }, 'Built by Nabil')
   ));
 
   // drawer: all browsing content lives here, off-screen until opened
@@ -55,7 +56,10 @@ export function renderShell(handlers) {
   const drawer = el('aside', { id: 'drawer', class: 'drawer' });
   drawer.appendChild(el('div', { class: 'drawer-head' },
     el('span', { class: 'drawer-title' }, 'Browse'),
-    el('button', { class: 'drawer-close', 'aria-label': 'Close', html: I.close, onclick: closeDrawer })
+    el('div', { class: 'drawer-head-actions' },
+      el('button', { id: 'adminBtn', class: 'drawer-close', title: 'Admin settings', 'aria-label': 'Admin settings', html: I.gear, onclick: handlers.onAdmin }),
+      el('button', { class: 'drawer-close', 'aria-label': 'Close', html: I.close, onclick: closeDrawer })
+    )
   ));
   drawer.appendChild(el('p', { class: 'lede' },
     '90s Hindi film songs, playing round the clock — the kind of tape that never stops at a neighbourhood barber shop. Everyone tuned in hears the same track at the same moment.'));
@@ -67,14 +71,35 @@ export function renderShell(handlers) {
   ));
   drawer.appendChild(el('div', { id: 'view' }));
   drawer.appendChild(el('footer', { class: 'foot' },
-    'Audio plays through YouTube’s embedded player. Nothing is hosted here; all rights stay with the labels, composers and performers.'
+    'Audio plays through YouTube’s embedded player. Nothing is hosted here; all rights stay with the labels, composers and performers. ',
+        el('br'),
+        el('a', { class: 'built-by', href: 'https://nabilahmed.in', target: '_blank', rel: 'noopener noreferrer' }, 'Built by Nabil'),
+        ' · Inspired by Deluxe Salon.'
   ));
   app.appendChild(drawer);
 
   // player bar
   app.appendChild(renderPlayerBar(handlers));
   app.appendChild(el('div', { id: 'yt-player', style: 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none' }));
+
+  // floating reactions (rendered here, animated by spawnReaction)
+  app.appendChild(el('div', { id: 'reactionLayer', class: 'reaction-layer' }));
+
+  // compact reaction dock on the main screen
+  app.appendChild(el('div', { id: 'reactionDock', class: 'reaction-dock' },
+    ...REACTIONS.map((e) => el('button', { class: 'react-btn', 'aria-label': e.name, onclick: () => sendReaction(e.emoji), html: e.emoji }))
+  ));
+
+  // full-screen Now Playing overlay
+  app.appendChild(renderNowPlaying());
 }
+
+const REACTIONS = [
+  { emoji: '❤️', name: 'love' },
+  { emoji: '🔥', name: 'fire' },
+  { emoji: '👏', name: 'clap' },
+  { emoji: '🎵', name: 'note' },
+];
 
 // ---- Drawer ---------------------------------------------------------
 export function openDrawer() {
@@ -90,7 +115,7 @@ export function closeDrawer() {
 export function renderPlayerBar(handlers = {}) {
   const s = station.song;
   const bar = el('div', { class: 'player' });
-  bar.appendChild(el('div', { class: 'now' },
+  bar.appendChild(el('div', { class: 'now', onclick: openNowPlaying, style: 'cursor:pointer' },
     el('div', { class: 'art' }, s ? s.hi.charAt(0) : '♪'),
     el('div', { class: 'now-meta' },
       el('div', { class: 'now-title' }, s ? s.hi : 'ट्यूनिंग इन — अहमेदी सैलून रेडियो'),
@@ -122,6 +147,99 @@ export function renderPlayer() {
   $('.player .now-title').textContent = s ? s.hi : 'ट्यूनिंग इन — अहमेदी सैलून रेडियो';
   $('.player .now-sub').textContent = s ? `${s.en} · ${s.film}` : 'Tap play to tune in';
   $('.player .art').textContent = s ? s.hi.charAt(0) : '♪';
+  updateNowPlaying();
+  setBackdropRotation(station.rotation);
+}
+
+// ---- Now Playing overlay -------------------------------------------
+function ytThumb(videoId) {
+  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '';
+}
+
+export function renderNowPlaying() {
+  return el('div', { id: 'nowPlaying', class: 'np', 'aria-hidden': 'true' },
+    el('button', { class: 'np-close', 'aria-label': 'Close', html: I.close, onclick: closeNowPlaying }),
+    el('div', { class: 'np-art' }, el('img', { id: 'npArt', alt: '', src: '' })),
+    el('div', { class: 'np-meta' },
+      el('div', { class: 'np-kicker' }, '▶ now playing · ', el('span', { id: 'npListeners' }, '0'), ' listening'),
+      el('h2', { class: 'np-title', id: 'npHi' }, '—'),
+      el('p', { class: 'np-sub', id: 'npEn' }, ''),
+      el('p', { class: 'np-artist', id: 'npArtist' }, '')
+    ),
+    el('div', { class: 'np-seek' },
+      el('input', { id: 'npSeek', type: 'range', min: '0', max: '100', value: '0' }),
+      el('div', { class: 'time' }, el('span', { id: 'npCur' }, '0:00'), el('span', { id: 'npDur' }, '0:00'))
+    ),
+    el('div', { class: 'np-controls' },
+      el('button', { class: 'ctrl', 'aria-label': 'Restart', html: I.prev, onclick: () => seekToPercent(0) }),
+      el('button', { class: 'ctrl main', id: 'npPlayBtn', 'aria-label': 'Play or pause', html: I.play, onclick: toggle }),
+      el('button', { class: 'ctrl', title: 'Skip (needs admin token)', 'aria-label': 'Skip', html: I.next, onclick: doSkip })
+    ),
+    el('div', { class: 'np-reactions' },
+      ...REACTIONS.map((e) => el('button', { class: 'react-btn lg', 'aria-label': e.name, onclick: () => sendReaction(e.emoji), html: e.emoji }))
+    ),
+    el('button', { class: 'np-share', onclick: onShare }, 'Share what’s playing'),
+    el('div', { class: 'np-upnext' }, 'Up next: ', el('span', { id: 'npUpNext' }, '—'))
+  );
+}
+
+async function onShare() {
+  const r = await shareNowPlaying();
+  if (r === 'copied') alert('Copied — paste it anywhere.');
+  else if (r === 'failed') alert('Sharing not available on this browser.');
+}
+
+export function openNowPlaying() {
+  const np = $('#nowPlaying'); if (!np) return;
+  np.classList.add('open');
+  np.setAttribute('aria-hidden', 'false');
+  updateNowPlaying();
+}
+export function closeNowPlaying() {
+  const np = $('#nowPlaying'); if (!np) return;
+  np.classList.remove('open');
+  np.setAttribute('aria-hidden', 'true');
+}
+
+export function updateNowPlaying() {
+  const s = station.song;
+  const art = $('#npArt');
+  if (art) art.src = s ? ytThumb(s.videoId) : '';
+  setText('#npHi', s ? s.hi : 'ट्यूनिंग इन — अहमेदी सैलून रेडियो');
+  setText('#npEn', s ? `${s.en} · ${s.film}` : 'Tap play to tune in');
+  setText('#npArtist', s ? `${s.artist} · ${s.year}` : '');
+  setText('#npUpNext', station.upNext ? `${station.upNext.hi} — ${station.upNext.en}` : '—');
+  setText('#npListeners', String(station.listeners || 0));
+  // mirror play/pause icon
+  const play = $('#npPlayBtn');
+  if (play) play.innerHTML = playIconIsPause() ? I.pause : I.play;
+}
+
+function setText(sel, t) { const n = $(sel); if (n) n.textContent = t; }
+function playIconIsPause() {
+  const b = $('#playBtn');
+  return !!(b && b.innerHTML.includes('M6 5h4'));
+}
+
+// ---- Reactions -----------------------------------------------------
+export function spawnReaction(emoji) {
+  const layer = $('#reactionLayer');
+  if (!layer) return;
+  const node = el('span', { class: 'float-emoji' }, emoji);
+  const left = 8 + Math.random() * 84;        // vw %
+  const size = 1.6 + Math.random() * 1.4;      // rem
+  const drift = (Math.random() * 2 - 1) * 40; // px horizontal drift
+  node.style.left = left + 'vw';
+  node.style.fontSize = size + 'rem';
+  node.style.setProperty('--drift', drift + 'px');
+  layer.appendChild(node);
+  node.addEventListener('animationend', () => node.remove());
+}
+
+// ---- Day/night reactive backdrop ----------------------------------
+export function setBackdropRotation(slug) {
+  const b = $('.backdrop');
+  if (b && b.dataset.rot !== slug) b.dataset.rot = slug || '';
 }
 
 // ---- Section header -------------------------------------------------
@@ -388,13 +506,17 @@ export function renderPresence() {
 }
 
 export function bindPlayerEvents() {
-  const seek = $('#seek');
-  if (seek && !seek.dataset.bound) {
-    seek.dataset.bound = '1';
-    let seeking = false;
-    seek.addEventListener('input', () => { seeking = true; });
-    seek.addEventListener('change', () => { seekToPercent(seek.value); seeking = false; });
-  }
+  const bindSeek = (id) => {
+    const seek = $('#' + id);
+    if (seek && !seek.dataset.bound) {
+      seek.dataset.bound = '1';
+      let seeking = false;
+      seek.addEventListener('input', () => { seeking = true; });
+      seek.addEventListener('change', () => { seekToPercent(seek.value); seeking = false; });
+    }
+  };
+  bindSeek('seek');
+  bindSeek('npSeek');
   const vol = $('#volume');
   if (vol && !vol.dataset.bound) {
     vol.dataset.bound = '1';

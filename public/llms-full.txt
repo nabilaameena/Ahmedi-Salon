@@ -1,0 +1,67 @@
+# अहमेदी सैलून · Ahmedi Salon (full reference for LLMs)
+
+> An always-on, synchronised street-corner radio playing 90s Bollywood film songs, inspired by Deluxe Salon.
+
+## What it is
+Ahmedi Salon is a full-stack, self-hostable radio station. Every listener tuned
+in at the same moment hears the same track at the same position, because a
+server-driven station clock seek-syncs each client. When a track ends, the
+server advances and broadcasts the next one to all clients. Audio is streamed
+through YouTube's embedded player; nothing is hosted on the site, and all
+rights to the music, films and recordings remain with their owners.
+
+- Live: https://ahmedisalon.nabilahmed.in
+- Source: https://github.com/nabilaameena/Ahmedi-Salon
+- Built by Nabil: https://nabilahmed.in
+- License: MIT (code); music/film rights remain with their owners
+
+## Features
+- Synchronised radio (server clock seek-syncs all listeners)
+- Live presence (concurrent listener count over WebSocket)
+- Song requests (vote tally; most-requested track plays next)
+- Listener wall (live chat broadcast to everyone)
+- Four rotations of 60 tracks, auto-picked by IST hour
+- Now Playing full screen, live reactions/emotes, shareable "now playing" card
+- Admin controls (token-protected skip + force-rotation)
+- PWA (installable, service worker, manifest)
+- Day/night reactive backdrop matching the current rotation
+
+## Rotations (by hour, India / IST)
+- 05:00–09:00 — Shaadi & Sunday
+- 09:00–18:00 — Saloon Classics
+- 18:00–22:00 — 90s Dard
+- 22:00–05:00 — Highway Raat
+
+## Catalogue
+133 songs, 1986 to 2001, each with a Hindi title (Devanagari), a Romanised
+title, the film, the artist and the year. Songs are requested by tapping them
+in the Songs view; the station plays the most-requested track next. The full
+list is in the source file `src/data.js`.
+
+## Architecture
+- Front end: Vite + vanilla JS (no framework), frosted-glass UI, PWA
+- Back end: Node + Express + `ws` WebSocket station server
+  - REST: `/api/state`, `/api/songs`, `/api/rotations`, `/api/schedule`,
+    `/api/requests`, `/api/stats`, `/api/request`, `/api/admin/*`
+  - WebSocket: `/ws` (station, presence, requests, chat, reactions)
+- Synchronisation: server keeps `startedAt` (ms); clients seek to
+  `(now - startedAt) / 1000`; clients report `track:ended` to advance
+- Persistence: JSON file (durations, chat, listen counts, peak)
+- Dockerized, single self-contained service on port 8080
+
+## How to run
+- Docker: `docker compose up --build -d` → http://localhost:8080
+- Dev: `npm run install:all && npm run dev` (server :8080, web :5173)
+- Without Docker: `npm run install:all && npm run build && PORT=8080 npm --prefix server start`
+- Admin token: set `ADMIN_TOKEN` env var (default `saloon`; change it)
+
+## Sections (links)
+- [On Air](https://ahmedisalon.nabilahmed.in/)
+- [Songs](https://ahmedisalon.nabilahmed.in/#/songs)
+- [Playlists](https://ahmedisalon.nabilahmed.in/#/playlists)
+- [Listener wall](https://ahmedisalon.nabilahmed.in/#/wall)
+
+## Credits & rights
+Audio plays through YouTube's embedded player. Nothing is hosted here, and all
+rights stay with the labels, composers and performers. Inspired by Deluxe Salon
+(https://deluxesaloon.in). Built by Nabil (https://nabilahmed.in).

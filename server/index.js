@@ -119,6 +119,13 @@ wss.on('connection', (ws) => {
         if (count != null) broadcast({ type: 'requests', items: station.requestList() });
         break;
       }
+      case 'reaction': {
+        // Ephemeral floating emote — broadcast to everyone, no persistence.
+        const emoji = String(msg.emoji || '').slice(0, 8);
+        if (!emoji) break;
+        broadcast({ type: 'reaction', emoji, id: crypto.randomUUID(), at: Date.now() });
+        break;
+      }
     }
   });
 

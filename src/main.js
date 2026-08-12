@@ -9,6 +9,7 @@ import { checkToken } from './admin.js';
 import {
   renderShell, renderView, renderTabs, renderPresence, renderPlayer,
   bindPlayerEvents, currentRoute, navigate, appendChat,
+  updateNowPlaying, spawnReaction, setBackdropRotation,
 } from './views.js';
 
 // Backdrop images (imported so Vite resolves correct relative URLs).
@@ -24,14 +25,17 @@ function refresh() {
 }
 
 // ---- Player callbacks -----------------------------------------------
+const PLAY_ICON = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
 player.initPlayer({
   onEnded: (videoId) => reportEnded(videoId),
   onDuration: (videoId, dur) => reportDuration(videoId, dur),
   onPlayingState: (playing) => {
-    const btn = document.getElementById('playBtn');
-    if (btn) btn.innerHTML = playing
-      ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>'
-      : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    const html = playing ? PAUSE_ICON : PLAY_ICON;
+    for (const id of ['playBtn', 'npPlayBtn']) {
+      const b = document.getElementById(id);
+      if (b) b.innerHTML = html;
+    }
   },
 });
 
@@ -44,10 +48,11 @@ connectStation({
   onUpNext: () => { if (currentRoute() !== 'wall') renderView(); },
   onRequests: () => { if (currentRoute() !== 'wall') renderView(); },
   onSchedule: () => { if (currentRoute() !== 'wall') renderView(); },
-  onPresence: () => renderPresence(),
-  onStats: () => { if (currentRoute() === 'home') renderView(); },
+  onPresence: () => { renderPresence(); updateNowPlaying(); },
+  onStats: () => { if (currentRoute() === 'home') renderView(); updateNowPlaying(); },
   onChat: (m) => appendChat(m),
   onChatHistory: () => { if (currentRoute() === 'wall') renderView(); },
+  onReaction: (m) => spawnReaction(m.emoji),
 });
 
 // ---- Tune-in / playback -------------------------------------------

@@ -1,0 +1,14 @@
+/* Ahmedi Salon — humans.txt
+   A synchronised street-corner radio playing 90s Bollywood film songs. */
+
+BUILT BY:      Nabil
+WEBSITE:       https://nabilahmed.in
+PROJECT:       https://github.com/nabilaameena/Ahmedi-Salon
+LIVE:          https://ahmedisalon.nabilahmed.in
+INSPIRED BY:   Deluxe Salon (https://deluxesaloon.in)
+
+STACK:         Vite, vanilla JS, Node, Express, WebSocket, Docker
+LANGUAGES:     English, Hindi (Devanagari)
+LICENSE:       MIT (code) — music & film rights remain with their owners
+
+THANKS:        90s Bollywood — and the voices that fill every neighbourhood barber shop.

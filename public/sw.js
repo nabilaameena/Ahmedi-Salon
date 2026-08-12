@@ -2,7 +2,7 @@
 // updates are picked up; stale-while-revalidate for hashed static assets.
 // YouTube playback and the WebSocket are always hit fresh.
 
-const CACHE = 'saloon-v5';
+const CACHE = 'saloon-v6';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
