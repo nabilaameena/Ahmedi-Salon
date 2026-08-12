@@ -2,6 +2,8 @@
 // (now playing, presence, requests, chat, schedule, stats) and notifies
 // the UI through per-type callbacks registered at connect time.
 
+import { toast } from './toast.js';
+
 const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 
 export const station = {
@@ -25,10 +27,18 @@ const cb = {};
 
 export function connectStation(handlers = {}) {
   Object.assign(cb, handlers);
+  let wasOpen = false;
   const open = () => {
     ws = new WebSocket(wsUrl);
-    ws.onopen = () => { clearTimeout(reconnectTimer); };
-    ws.onclose = () => { reconnectTimer = setTimeout(open, 2000); };
+    ws.onopen = () => {
+      clearTimeout(reconnectTimer);
+      if (wasOpen) toast('Reconnected to the station.', 'success');
+      wasOpen = true;
+    };
+    ws.onclose = () => {
+      if (wasOpen) toast('Connection dropped — reconnecting…', 'default', 2500);
+      reconnectTimer = setTimeout(open, 2000);
+    };
     ws.onerror = () => { try { ws.close(); } catch {} };
     ws.onmessage = (ev) => {
       let msg; try { msg = JSON.parse(ev.data); } catch { return; }

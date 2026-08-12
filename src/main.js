@@ -5,11 +5,12 @@ import backdropMobile from './assets/backdrop-mobile.png';
 import { songs } from './data.js';
 import * as player from './player.js';
 import { station, connectStation, reportEnded, reportDuration, tuneIn } from './station.js';
-import { checkToken } from './admin.js';
+import { onAuthChange } from './admin.js';
+import { enableNotifications, notifyNowPlaying } from './notify.js';
 import {
   renderShell, renderView, renderTabs, renderPresence, renderPlayer,
   bindPlayerEvents, currentRoute, navigate, appendChat,
-  updateNowPlaying, spawnReaction, setBackdropRotation,
+  updateNowPlaying, spawnReaction, setBackdropRotation, updateAdminControls,
 } from './views.js';
 
 // Backdrop images (imported so Vite resolves correct relative URLs).
@@ -44,6 +45,7 @@ connectStation({
   onStation: (s) => {
     player.syncTo(s.videoId, s.startedAt);
     refresh();
+    if (station.tunedIn) notifyNowPlaying(s.song);
   },
   onUpNext: () => { if (currentRoute() !== 'wall') renderView(); },
   onRequests: () => { if (currentRoute() !== 'wall') renderView(); },
@@ -62,6 +64,7 @@ function doTuneIn() {
   tuneIn();
   player.setTunedIn(true);
   player.play();
+  enableNotifications().then((on) => { if (on) notifyNowPlaying(station.song); });
 }
 function onPlayClick() {
   if (!station.tunedIn) doTuneIn();
@@ -72,17 +75,18 @@ function onPlayClick() {
 renderShell({
   onTuneIn: doTuneIn,
   onPlayClick: onPlayClick,
-  onAdmin: async () => {
-    const t = (prompt('Admin token:') || '').trim();
-    if (!t) return;
-    const ok = await checkToken(t);
-    alert(ok ? 'Admin token accepted — skip & switch are enabled.' : 'Wrong admin token.');
-  },
 });
 renderTabs();
 renderView();
 renderPresence();
 bindPlayerEvents();
+updateAdminControls();
+
+// Re-render admin-gated controls when the token is set or cleared.
+onAuthChange(() => {
+  updateAdminControls();
+  renderView();
+});
 
 window.addEventListener('hashchange', () => {
   renderTabs();

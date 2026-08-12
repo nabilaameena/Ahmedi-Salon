@@ -2,9 +2,10 @@
 import { el, $, I, relTime } from './lib.js';
 import { songs, rotations, songsBySlug } from './data.js';
 import { station, requestSong, postChat, sendReaction } from './station.js';
-import { doSkip, doSwitch } from './admin.js';
+import { doSkip, doSwitch, hasAdminToken, checkToken, clearToken, onAuthChange } from './admin.js';
 import { toggle, setVolume, seekToPercent } from './player.js';
 import { shareNowPlaying } from './share.js';
+import { toast } from './toast.js';
 
 // ---- Links -----------------------------------------------------------
 const LINKS = {
@@ -57,7 +58,7 @@ export function renderShell(handlers) {
   drawer.appendChild(el('div', { class: 'drawer-head' },
     el('span', { class: 'drawer-title' }, 'Browse'),
     el('div', { class: 'drawer-head-actions' },
-      el('button', { id: 'adminBtn', class: 'drawer-close', title: 'Admin settings', 'aria-label': 'Admin settings', html: I.gear, onclick: handlers.onAdmin }),
+      renderAdminWidget(),
       el('button', { class: 'drawer-close', 'aria-label': 'Close', html: I.close, onclick: closeDrawer })
     )
   ));
@@ -111,6 +112,70 @@ export function closeDrawer() {
   document.getElementById('drawerScrim')?.classList.remove('open');
 }
 
+// ---- Admin token widget (gear → input → green/red gear) ------------
+export function renderAdminWidget() {
+  const widget = el('div', {
+    id: 'adminWidget',
+    class: 'admin-widget',
+    'data-state': hasAdminToken() ? 'ok' : 'idle',
+  },
+    el('button', { id: 'adminGear', class: 'admin-gear', title: 'Admin settings', 'aria-label': 'Admin settings', html: I.gear, onclick: adminEdit }),
+    el('button', { id: 'adminLogout', class: 'admin-logout', title: 'Sign out', 'aria-label': 'Sign out', html: I.logout, onclick: adminLogout }),
+    el('span', { class: 'admin-field' },
+      el('input', { id: 'adminInput', class: 'admin-input', type: 'password', placeholder: 'admin token', autocomplete: 'off', spellcheck: 'false', onkeydown: (e) => {
+        if (e.key === 'Enter') adminSubmit();
+        if (e.key === 'Escape') adminCancel();
+      } }),
+      el('button', { class: 'admin-ok', title: 'Confirm', 'aria-label': 'Confirm', html: I.check, onclick: adminSubmit }),
+      el('button', { class: 'admin-cancel', title: 'Cancel', 'aria-label': 'Cancel', html: I.close, onclick: adminCancel })
+    )
+  );
+  // keep the widget in sync if the token is cleared elsewhere (e.g. a 401)
+  onAuthChange(syncAdminWidget);
+  return widget;
+}
+
+function adminState() { return document.getElementById('adminWidget')?.getAttribute('data-state'); }
+function setAdminState(state) {
+  const w = document.getElementById('adminWidget');
+  if (w) w.setAttribute('data-state', state);
+}
+function syncAdminWidget() {
+  if (adminState() === 'editing') return;        // don't clobber an active edit
+  setAdminState(hasAdminToken() ? 'ok' : 'idle');
+}
+
+function adminEdit() {
+  setAdminState('editing');
+  const input = document.getElementById('adminInput');
+  if (input) { input.value = ''; input.focus(); }
+}
+function adminCancel() {
+  setAdminState(hasAdminToken() ? 'ok' : 'idle');
+}
+async function adminSubmit() {
+  const input = document.getElementById('adminInput');
+  if (!input) return;
+  const token = input.value.trim();
+  if (!token) { adminCancel(); return; }
+  input.disabled = true;
+  const ok = await checkToken(token);
+  input.disabled = false;
+  if (ok) {
+    setAdminState('ok');
+    toast('Admin enabled — skip & switch are now available.', 'success');
+  } else {
+    setAdminState('err');
+    toast('Wrong admin token.', 'error');
+    setTimeout(() => { setAdminState('editing'); if (input) { input.value = ''; input.focus(); } }, 1300);
+  }
+}
+function adminLogout() {
+  clearToken();
+  setAdminState('idle');
+  toast('Signed out of admin.', 'default');
+}
+
 // ---- Player bar -----------------------------------------------------
 export function renderPlayerBar(handlers = {}) {
   const s = station.song;
@@ -132,7 +197,7 @@ export function renderPlayerBar(handlers = {}) {
   bar.appendChild(el('div', { class: 'controls' },
     el('button', { class: 'ctrl', id: 'prevBtn', 'aria-label': 'Restart track', html: I.prev, onclick: () => seekToPercent(0) }),
     el('button', { class: 'ctrl main', id: 'playBtn', 'aria-label': 'Play or pause', html: I.play, onclick: handlers.onPlayClick || toggle }),
-    el('button', { class: 'ctrl', id: 'nextBtn', title: 'Skip (needs admin token)', 'aria-label': 'Skip', html: I.next, onclick: doSkip })
+    el('button', { class: 'ctrl', id: 'nextBtn', title: 'Skip', 'aria-label': 'Skip', html: I.next, onclick: doSkip })
   ));
   bar.appendChild(el('div', { class: 'vol' },
     el('span', { html: I.vol, style: 'display:flex' }),
@@ -173,7 +238,7 @@ export function renderNowPlaying() {
     el('div', { class: 'np-controls' },
       el('button', { class: 'ctrl', 'aria-label': 'Restart', html: I.prev, onclick: () => seekToPercent(0) }),
       el('button', { class: 'ctrl main', id: 'npPlayBtn', 'aria-label': 'Play or pause', html: I.play, onclick: toggle }),
-      el('button', { class: 'ctrl', title: 'Skip (needs admin token)', 'aria-label': 'Skip', html: I.next, onclick: doSkip })
+      el('button', { class: 'ctrl', id: 'npNextBtn', title: 'Skip', 'aria-label': 'Skip', html: I.next, onclick: doSkip })
     ),
     el('div', { class: 'np-reactions' },
       ...REACTIONS.map((e) => el('button', { class: 'react-btn lg', 'aria-label': e.name, onclick: () => sendReaction(e.emoji), html: e.emoji }))
@@ -185,8 +250,8 @@ export function renderNowPlaying() {
 
 async function onShare() {
   const r = await shareNowPlaying();
-  if (r === 'copied') alert('Copied — paste it anywhere.');
-  else if (r === 'failed') alert('Sharing not available on this browser.');
+  if (r === 'copied') toast('Copied — paste it anywhere.', 'success');
+  else if (r === 'failed') toast('Sharing isn’t available on this browser.', 'error');
 }
 
 export function openNowPlaying() {
@@ -240,6 +305,15 @@ export function spawnReaction(emoji) {
 export function setBackdropRotation(slug) {
   const b = $('.backdrop');
   if (b && b.dataset.rot !== slug) b.dataset.rot = slug || '';
+}
+
+// Show admin-only controls (skip buttons) only when a token is present.
+export function updateAdminControls() {
+  const show = hasAdminToken() ? '' : 'none';
+  for (const id of ['nextBtn', 'npNextBtn']) {
+    const n = document.getElementById(id);
+    if (n) n.style.display = show;
+  }
 }
 
 // ---- Section header -------------------------------------------------
@@ -397,7 +471,7 @@ export function renderPlaylists() {
       el('p', { class: 'en' }, r.en),
       el('p', {}, r.description)
     );
-    if (r.slug !== station.rotation) {
+    if (r.slug !== station.rotation && hasAdminToken()) {
       card.appendChild(el('button', {
         class: 'switch-btn',
         onclick: (e) => { e.stopPropagation(); doSwitch(r.slug); },

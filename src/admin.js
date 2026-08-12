@@ -1,9 +1,16 @@
 // Admin actions (skip, switch rotation) hit the REST endpoints and give
-// real feedback on a wrong/missing token — instead of silently failing
-// over the WebSocket like the older version did.
+// real feedback via toasts — no silent failures, no browser alerts.
+
+import { toast } from './toast.js';
 
 export function getToken() { return localStorage.getItem('saloonAdmin') || ''; }
-export function clearToken() { localStorage.removeItem('saloonAdmin'); }
+export function hasAdminToken() { return !!localStorage.getItem('saloonAdmin'); }
+
+const authListeners = new Set();
+export function onAuthChange(fn) { authListeners.add(fn); }
+function notifyAuth() { for (const fn of authListeners) fn(); }
+
+export function clearToken() { localStorage.removeItem('saloonAdmin'); notifyAuth(); }
 
 async function post(url, body) {
   return fetch(url, {
@@ -13,38 +20,33 @@ async function post(url, body) {
   });
 }
 
-function promptToken(action) {
-  const t = (prompt(`Admin token — ${action}:`) || '').trim();
-  if (t) localStorage.setItem('saloonAdmin', t);
-  return t;
-}
-
-/** Validate the token currently in storage (used by the gear button). */
+/** Validate a token; store it on success, clear on failure. Returns boolean. */
 export async function checkToken(token) {
   const r = await post('/api/admin/check', { token });
-  if (r.ok) { localStorage.setItem('saloonAdmin', token); return true; }
+  if (r.ok) { localStorage.setItem('saloonAdmin', token); notifyAuth(); return true; }
   clearToken();
   return false;
 }
 
-export async function doSkip() {
-  let t = getToken();
-  if (!t) t = promptToken('skip the station');
+// The skip / switch buttons are only shown when a token is present, so these
+// are only ever called as an admin. Network errors are caught + toasted.
+async function adminAction(url, body, okMsg, failMsg) {
+  const t = getToken();
   if (!t) return;
-  const r = await post('/api/admin/skip', { token: t });
-  if (r.status === 401) {
-    alert('Wrong admin token — not skipped.');
-    clearToken();
+  try {
+    const r = await post(url, body);
+    if (r.status === 401) { toast(failMsg, 'error'); clearToken(); return; }
+    if (!r.ok) { toast(failMsg, 'error'); return; }
+    if (okMsg) toast(okMsg, 'success');
+  } catch {
+    toast('Couldn’t reach the station. Try again.', 'error');
   }
 }
 
-export async function doSwitch(slug) {
-  let t = getToken();
-  if (!t) t = promptToken('switch the station rotation');
-  if (!t) return;
-  const r = await post('/api/admin/rotation', { slug, token: t });
-  if (r.status === 401) {
-    alert('Wrong admin token — rotation not changed.');
-    clearToken();
-  }
+export function doSkip() {
+  return adminAction('/api/admin/skip', { token: getToken() }, 'Skipped.', 'Wrong admin token — not skipped.');
+}
+
+export function doSwitch(slug) {
+  return adminAction('/api/admin/rotation', { slug, token: getToken() }, 'Rotation switched.', 'Wrong admin token — rotation not changed.');
 }
